@@ -1,0 +1,22 @@
+groups:
+  - name: aerowake-research-availability
+    rules:
+      - alert: AeroWakeApiDown
+        expr: up{job="aerowake-api"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AeroWake research API unavailable"
+          description: "Synthetic research telemetry endpoint is not available"
+      - alert: AeroWakeElevatedApiErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="aerowake-api",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total{job="aerowake-api"}[5m])), 1)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Research API 5xx rate above 5 percent"

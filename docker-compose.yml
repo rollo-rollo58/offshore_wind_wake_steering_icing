@@ -1,0 +1,38 @@
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aerowake
+      POSTGRES_USER: aerowake
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set this in your shell}
+    ports:
+      - "5432:5432"
+    volumes:
+      - turbine_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aerowake -d aerowake"]
+      interval: 10s
+      retries: 8
+      timeout: 3s
+  api:
+    build: ./backend
+    environment:
+      APP_ENV: demonstration
+      ALLOWED_ORIGINS: http://localhost:3000
+      OPERATOR_API_KEY: ${OPERATOR_API_KEY:-}
+    ports:
+      - "8000:8000"
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+volumes:
+  turbine_data:
